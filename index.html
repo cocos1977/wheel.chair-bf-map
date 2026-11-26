@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>이동의 자유 맵 - 휠체어 BF 내비게이션 MVP</title>
+  <title>이동의 자유 맵 - 휠체어 BF 내비게이션</title>
   <style>
     :root {
       --primary: #1b4b8a;
@@ -11,6 +11,7 @@
       --accent: #f59e0b;
       --danger: #dc2626;
       --success: #16a34a;
+      --purple: #7c3aed;
       --bg: #f8fafc;
       --surface: #ffffff;
       --border: #cbd5e1;
@@ -49,7 +50,7 @@
     }
     .brand { display: flex; flex-direction: column; }
     .brand-title { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; }
-    .brand-sub { font-size: 11px; opacity: 0.85; margin-top: 2px; }
+    .brand-sub { font-size: 11px; opacity: 0.88; margin-top: 2px; }
     .header-actions { display: flex; gap: 6px; align-items: center; }
     .btn-pill {
       border: none;
@@ -106,8 +107,9 @@
       color: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.25); cursor: pointer;
       white-space: nowrap; z-index: 6;
     }
-    .sim-marker.barrier { background: #dc2626; }
+    .sim-marker.barrier { background: var(--danger); }
     .sim-marker.spot { background: #2563eb; }
+    .sim-marker.request { background: var(--purple); }
     .sim-center-pin {
       position: absolute; left: 50%; top: 50%; transform: translate(-50%, -100%);
       font-size: 26px; pointer-events: none; z-index: 8;
@@ -128,7 +130,7 @@
     .filter-chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
     .map-float-tools {
-      position: absolute; right: 12px; bottom: 72px;
+      position: absolute; right: 12px; bottom: 20px;
       display: flex; flex-direction: column; gap: 8px; z-index: 12;
     }
     .btn-float {
@@ -166,9 +168,10 @@
     .section-pad { padding: 14px; }
     .card {
       background: #fff; border: 1px solid var(--border); border-radius: 12px;
-      padding: 12px; margin-bottom: 10px;
+      padding: 12px; margin-bottom: 10px; cursor: pointer;
     }
-    .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .card.static { cursor: default; }
+    .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 6px; }
     .tag {
       display: inline-block; padding: 3px 8px; border-radius: 6px;
       font-size: 11px; font-weight: 700;
@@ -176,6 +179,7 @@
     .tag-barrier { background: #fee2e2; color: #991b1b; }
     .tag-spot { background: #dbeafe; color: #1e40af; }
     .tag-track { background: #dcfce7; color: #166534; }
+    .tag-request { background: #ede9fe; color: #5b21b6; }
     .muted { color: var(--muted); font-size: 12px; }
 
     /* Bottom Sheet / Modal */
@@ -229,6 +233,13 @@
     .ox-btn.o.selected { background: #dcfce7; border-color: var(--success); color: var(--success); }
     .ox-btn.x.selected { background: #fee2e2; border-color: var(--danger); color: var(--danger); }
 
+    .ox-badge {
+      padding: 3px 9px; border-radius: 6px; font-size: 11px; font-weight: 800;
+    }
+    .ox-badge.o { background: #dcfce7; color: #166534; }
+    .ox-badge.x { background: #fee2e2; color: #991b1b; }
+    .ox-badge.n { background: #f1f5f9; color: #64748b; }
+
     .input-box, .textarea-box {
       width: 100%; border: 1.5px solid var(--border); border-radius: 10px;
       padding: 10px 12px; font-size: 13px; font-family: inherit;
@@ -240,11 +251,22 @@
     }
     .btn-submit.danger { background: var(--danger); }
     .btn-submit.success { background: var(--success); }
-    .photo-preview { width: 100%; max-height: 150px; object-fit: cover; border-radius: 10px; margin-top: 8px; display: none; }
+    .btn-submit.purple { background: var(--purple); }
+    .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+    .photo-preview { width: 100%; max-height: 180px; object-fit: cover; border-radius: 10px; margin-top: 8px; display: none; }
+    .detail-photo { width: 100%; max-height: 220px; object-fit: cover; border-radius: 12px; margin-bottom: 10px; border: 1px solid var(--border); }
     .coord-box {
       background: #f1f5f9; border-radius: 8px; padding: 8px 10px;
       font-size: 12px; font-weight: 600; color: var(--primary); margin-bottom: 8px;
     }
+    .review-box {
+      background: #f8fafc; border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px; margin-top: 10px;
+    }
+    .review-item {
+      border-bottom: 1px solid #e2e8f0; padding: 8px 0; font-size: 12.5px;
+    }
+    .review-item:last-child { border-bottom: none; }
   </style>
 </head>
 <body>
@@ -253,7 +275,7 @@
   <header class="app-header">
     <div class="brand">
       <div class="brand-title">이동의 자유 맵 (BF MVP)</div>
-      <div class="brand-sub" id="connection-status">로컬 데모 모드 · 해운대구 실증</div>
+      <div class="brand-sub" id="connection-status">연결 확인 중...</div>
     </div>
     <div class="header-actions">
       <button class="btn-pill btn-cfg" onclick="openModal('modal-config')">⚙️ 설정</button>
@@ -271,6 +293,7 @@
           <button class="filter-chip" onclick="setMapFilter('barrier', this)">🚧 배리어</button>
           <button class="filter-chip" onclick="setMapFilter('spot', this)">♿ BF 스팟</button>
           <button class="filter-chip" onclick="setMapFilter('track', this)">🛤️ 주행이력</button>
+          <button class="filter-chip" onclick="setMapFilter('request', this)">❓ 요청</button>
         </div>
 
         <div id="track-banner" class="track-banner">
@@ -283,7 +306,7 @@
 
         <div id="naver-map" style="display:none;"></div>
 
-        <!-- 네이버지도 API 미입력 시 즉시 테스트용 가상 지도 -->
+        <!-- 네이버지도 API 미연결 시 테스트용 가상 지도 -->
         <div id="fallback-map" onclick="onFallbackMapClick(event)">
           <div class="fallback-road-h" style="top: 32%;"></div>
           <div class="fallback-road-h" style="top: 66%;"></div>
@@ -306,13 +329,16 @@
 
     <!-- 2. 타임라인(피드) 탭 -->
     <section id="panel-feed" class="tab-panel section-pad">
-      <h3 style="margin:0 0 10px;">실시간 수집 데이터 피드</h3>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h3 style="margin:0;">실시간 수집 데이터 피드</h3>
+        <button class="btn-pill" style="background:#e2e8f0; color:#0f172a;" onclick="loadAllData().then(renderMapItems)">🔄 새로고침</button>
+      </div>
       <div id="feed-list"></div>
     </section>
 
     <!-- 3. 내 정보 및 휠체어 규격 탭 -->
     <section id="panel-profile" class="tab-panel section-pad">
-      <div class="card">
+      <div class="card static">
         <div class="card-head">
           <strong>실증 기준 휠체어 규격 설정</strong>
           <span class="tag tag-spot">KPI 기준</span>
@@ -327,12 +353,13 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card static">
         <strong style="display:block; margin-bottom:8px;">내 리빙랩 수집 현황</strong>
-        <div class="tap-grid-3" id="stats-grid">
-          <div class="tap-btn">배리어<br><span id="stat-barriers" style="font-size:16px; color:var(--danger);">0</span>건</div>
+        <div class="tap-grid-2" id="stats-grid">
+          <div class="tap-btn">배리어 제보<br><span id="stat-barriers" style="font-size:16px; color:var(--danger);">0</span>건</div>
           <div class="tap-btn">BF 스팟<br><span id="stat-spots" style="font-size:16px; color:var(--primary);">0</span>곳</div>
           <div class="tap-btn">주행이력<br><span id="stat-tracks" style="font-size:16px; color:var(--success);">0</span>건</div>
+          <div class="tap-btn">등록 요청<br><span id="stat-requests" style="font-size:16px; color:var(--purple);">0</span>건</div>
         </div>
       </div>
     </section>
@@ -340,11 +367,11 @@
 
   <!-- 하단 네비게이션 -->
   <nav class="bottom-nav">
-    <button class="nav-item" onclick="switchTab('feed', this)"><span class="nav-icon">📋</span>타임라인</button>
-    <button class="nav-item active" onclick="switchTab('map', this)"><span class="nav-icon">🗺️</span>지도</button>
+    <button class="nav-item" id="nav-feed" onclick="switchTab('feed', this)"><span class="nav-icon">📋</span>타임라인</button>
+    <button class="nav-item active" id="nav-map" onclick="switchTab('map', this)"><span class="nav-icon">🗺️</span>지도</button>
     <button class="nav-item nav-plus" onclick="openModal('modal-action')"><span class="nav-icon">＋</span>게시물</button>
     <button class="nav-item" onclick="openTrackStartModal()"><span class="nav-icon">🛤️</span>주행</button>
-    <button class="nav-item" onclick="switchTab('profile', this)"><span class="nav-icon">♿</span>프로필</button>
+    <button class="nav-item" id="nav-profile" onclick="switchTab('profile', this)"><span class="nav-icon">♿</span>프로필</button>
   </nav>
 
   <!-- 1. + 게시물 원탭 액션 메뉴 -->
@@ -356,19 +383,20 @@
       </div>
       <div class="sheet-body">
         <div class="tap-grid-2">
-          <button class="tap-btn" style="padding:18px 8px; border-color:#fca5a5; background:#fef2f2;" onclick="closeModal('modal-action'); openBarrierModal();">
+          <button class="tap-btn" style="padding:16px 8px; border-color:#fca5a5; background:#fef2f2;" onclick="closeModal('modal-action'); openBarrierModal();">
             🚧<br><br>배리어 제보<br><span class="muted">단차·경사·장애물</span>
           </button>
-          <button class="tap-btn" style="padding:18px 8px; border-color:#93c5fd; background:#eff6ff;" onclick="closeModal('modal-action'); openSpotModal();">
+          <button class="tap-btn" style="padding:16px 8px; border-color:#93c5fd; background:#eff6ff;" onclick="closeModal('modal-action'); openSpotModal();">
             ♿<br><br>BF 스팟 등록<br><span class="muted">7문항 O/X 평가</span>
           </button>
-          <button class="tap-btn" style="padding:18px 8px; border-color:#86efac; background:#f0fdf4;" onclick="closeModal('modal-action'); openTrackStartModal();">
+          <button class="tap-btn" style="padding:16px 8px; border-color:#86efac; background:#f0fdf4;" onclick="closeModal('modal-action'); openTrackStartModal();">
             🛤️<br><br>주행 이력 기록<br><span class="muted">실이동 경로 저장</span>
           </button>
-          <button class="tap-btn" style="padding:18px 8px; border-color:#fcd34d; background:#fffbeb;" onclick="closeModal('modal-action'); openModal('modal-sos');">
-            🚨<br><br>긴급 위치 전송<br><span class="muted">관계기관 SOS 신고</span>
+          <button class="tap-btn" style="padding:16px 8px; border-color:#c4b5fd; background:#f5f3ff;" onclick="closeModal('modal-action'); openRequestModal();">
+            ❓<br><br>정보 등록 요청<br><span class="muted">미등록 시설 문의</span>
           </button>
         </div>
+        <button class="btn-submit danger" style="margin-top:10px;" onclick="closeModal('modal-action'); openModal('modal-sos');">🚨 긴급 상황 실시간 위치 전송 (SOS)</button>
       </div>
     </div>
   </div>
@@ -382,7 +410,7 @@
       </div>
       <div class="sheet-body">
         <div class="coord-box" id="barrier-coord-text">위치: 35.1695, 129.1319</div>
-        <input id="barrier-address" class="input-box" placeholder="상세 주소 또는 위치 설명 (예: 센텀중앙로 48 앞 보도)" />
+        <input id="barrier-address" class="input-box" placeholder="상세 주소 또는 위치 설명 (지도 위치 기준 자동조회)" />
 
         <span class="field-label">실내 / 실외 구분</span>
         <div class="tap-grid-2" id="barrier-inout">
@@ -417,12 +445,12 @@
           <button class="tap-btn" onclick="multiSelect(this)">노약자</button>
         </div>
 
-        <span class="field-label">현장 사진 및 추가 설명</span>
-        <input type="file" accept="image/*" capture="environment" onchange="previewPhoto(this, 'barrier-photo-preview')" />
+        <span class="field-label">현장 사진 및 추가 설명 (자동 압축 업로드)</span>
+        <input id="barrier-photo-input" type="file" accept="image/*" capture="environment" onchange="handlePhotoSelect(this, 'barrier')" />
         <img id="barrier-photo-preview" class="photo-preview" />
         <textarea id="barrier-desc" class="textarea-box" rows="2" style="margin-top:8px;" placeholder="추가 설명이 필요한 경우 입력하세요 (예: 가로수 뿌리로 보도블록 융기)"></textarea>
 
-        <button class="btn-submit danger" onclick="submitBarrier()">배리어 제보 저장</button>
+        <button id="btn-submit-barrier" class="btn-submit danger" onclick="submitBarrier()">배리어 제보 저장</button>
       </div>
     </div>
   </div>
@@ -464,16 +492,45 @@
         <div id="spot-checklist"></div>
 
         <span class="field-label">4. 사진 및 이용 후기</span>
-        <input type="file" accept="image/*" capture="environment" onchange="previewPhoto(this, 'spot-photo-preview')" />
+        <input id="spot-photo-input" type="file" accept="image/*" capture="environment" onchange="handlePhotoSelect(this, 'spot')" />
         <img id="spot-photo-preview" class="photo-preview" />
         <textarea id="spot-comment" class="textarea-box" rows="2" style="margin-top:8px;" placeholder="출입구 동선, 화장실 상태 등 리뷰를 남겨주세요"></textarea>
 
-        <button class="btn-submit" onclick="submitSpot()">BF 스팟 등록</button>
+        <button id="btn-submit-spot" class="btn-submit" onclick="submitSpot()">BF 스팟 등록</button>
       </div>
     </div>
   </div>
 
-  <!-- 4. 주행 이력 시작/종료 시트 (F-06) -->
+  <!-- 4. 시설/경로 등록 요청 시트 (F-07) -->
+  <div id="modal-request" class="modal-backdrop" onclick="backdropClose(event, 'modal-request')">
+    <div class="sheet">
+      <div class="sheet-header">
+        <h3 class="sheet-title">❓ 배리어프리 정보 등록 요청</h3>
+        <button class="sheet-close" onclick="closeModal('modal-request')">닫기</button>
+      </div>
+      <div class="sheet-body">
+        <div class="coord-box" id="request-coord-text">위치: 35.1695, 129.1319</div>
+        <span class="field-label">확인하고 싶은 스팟/장소명</span>
+        <input id="request-spot-name" class="input-box" placeholder="예: 센텀 OO식당 / 영화의전당 야외광장" />
+        <span class="field-label">알고 싶은 배리어프리 정보</span>
+        <textarea id="request-detail" class="textarea-box" rows="3" placeholder="예: 1층 출입구에 턱이 있는지, 휠체어가 들어갈 수 있는 화장실이 있는지 궁금합니다."></textarea>
+        <button class="btn-submit purple" onclick="submitRequest()">등록 요청 올리기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. 상세 보기 및 이용 평가(F-08) 모달 -->
+  <div id="modal-detail" class="modal-backdrop" onclick="backdropClose(event, 'modal-detail')">
+    <div class="sheet">
+      <div class="sheet-header">
+        <h3 class="sheet-title" id="detail-title">상세 정보</h3>
+        <button class="sheet-close" onclick="closeModal('modal-detail')">닫기</button>
+      </div>
+      <div class="sheet-body" id="detail-body"></div>
+    </div>
+  </div>
+
+  <!-- 6. 주행 이력 시작/종료 시트 (F-06) -->
   <div id="modal-track-start" class="modal-backdrop" onclick="backdropClose(event, 'modal-track-start')">
     <div class="sheet">
       <div class="sheet-header">
@@ -511,7 +568,7 @@
     </div>
   </div>
 
-  <!-- 5. 긴급 SOS 시트 (F-09) -->
+  <!-- 7. 긴급 SOS 시트 (F-09) -->
   <div id="modal-sos" class="modal-backdrop" onclick="backdropClose(event, 'modal-sos')">
     <div class="sheet">
       <div class="sheet-header">
@@ -534,7 +591,7 @@
     </div>
   </div>
 
-  <!-- 6. API 연결 설정 모달 -->
+  <!-- 8. API 연결 설정 모달 -->
   <div id="modal-config" class="modal-backdrop" onclick="backdropClose(event, 'modal-config')">
     <div class="sheet">
       <div class="sheet-header">
@@ -549,7 +606,7 @@
         <span class="field-label">Supabase Anon Public Key</span>
         <input id="cfg-sb-key" class="input-box" placeholder="eyJhbGci..." />
         <button class="btn-submit" onclick="saveConfig()">설정 저장 및 재연결</button>
-        <button class="btn-submit" style="background:#64748b; margin-top:8px;" onclick="resetDemoData()">초기 샘플 데이터 복원</button>
+        <button class="btn-submit" style="background:#64748b; margin-top:8px;" onclick="clearLocalConfig()">브라우저 저장 설정 초기화 (코드 기본값 사용)</button>
       </div>
     </div>
   </div>
@@ -562,6 +619,11 @@
   let naverMap = null;
   let naverOverlays = [];
   let currentFilter = 'all';
+
+  let pendingPhotos = {
+    barrier: null, // { blob, dataUrl }
+    spot: null
+  };
 
   let tracking = {
     active: false,
@@ -584,7 +646,6 @@
   ];
   let spotAnswers = {};
 
-  // ===== 초기 샘플 데이터 (부산 해운대구 실증 기준) =====
   const SEED_DATA = {
     barriers: [
       {
@@ -607,10 +668,12 @@
         created_at: new Date().toISOString()
       }
     ],
-    tracks: []
+    tracks: [],
+    requests: [],
+    reviews: []
   };
 
-  let store = { barriers: [], spots: [], tracks: [] };
+  let store = { barriers: [], spots: [], tracks: [], requests: [], reviews: [] };
 
   // ===== 초기화 =====
   window.addEventListener('DOMContentLoaded', async () => {
@@ -628,18 +691,23 @@
     };
   }
 
+  function hasValidSupabase() {
+    const { sbUrl, sbKey } = getConfig();
+    return Boolean(sbUrl && sbKey && !sbKey.includes('여기에_'));
+  }
+
   function loadConfigToInputs() {
     const cfg = getConfig();
     document.getElementById('cfg-naver-id').value = cfg.naverId;
     document.getElementById('cfg-sb-url').value = cfg.sbUrl;
-    document.getElementById('cfg-sb-key').value = cfg.sbKey;
+    document.getElementById('cfg-sb-key').value = cfg.sbKey.includes('여기에_') ? '' : cfg.sbKey;
     updateConnectionBadge();
   }
 
   function updateConnectionBadge() {
     const cfg = getConfig();
     const mapTxt = cfg.naverId ? '네이버지도 연동' : '테스트 지도';
-    const dbTxt = (cfg.sbUrl && cfg.sbKey) ? 'Supabase DB' : '로컬 저장소';
+    const dbTxt = hasValidSupabase() ? 'Supabase DB' : '로컬 저장소';
     document.getElementById('connection-status').textContent = `${mapTxt} · ${dbTxt}`;
   }
 
@@ -651,16 +719,19 @@
     location.reload();
   }
 
-  function resetDemoData() {
-    localStorage.setItem('bf_local_store', JSON.stringify(SEED_DATA));
-    loadAllData().then(() => { renderMapItems(); closeModal('modal-config'); });
+  function clearLocalConfig() {
+    localStorage.removeItem('bf_naver_id');
+    localStorage.removeItem('bf_sb_url');
+    localStorage.removeItem('bf_sb_key');
+    closeModal('modal-config');
+    location.reload();
   }
 
-  // ===== 데이터 로드 & 저장 (Supabase / LocalStorage 겸용) =====
-  async function sbFetch(table, method = 'GET', body = null) {
+  // ===== Supabase 통신 & 로컬 폴백 =====
+  async function sbFetch(table, method = 'GET', body = null, query = 'order=created_at.desc&limit=100') {
+    if (!hasValidSupabase()) return null;
     const { sbUrl, sbKey } = getConfig();
-    if (!sbUrl || !sbKey) return null;
-    const url = `${sbUrl}/rest/v1/${table}?order=created_at.desc&limit=100`;
+    const url = `${sbUrl}/rest/v1/${table}${query ? '?' + query : ''}`;
     const res = await fetch(url, {
       method,
       headers: {
@@ -675,16 +746,30 @@
     return await res.json();
   }
 
+  async function safeSbGet(table) {
+    try { return (await sbFetch(table)) || []; }
+    catch { return []; }
+  }
+
   async function loadAllData() {
-    const { sbUrl, sbKey } = getConfig();
-    if (sbUrl && sbKey) {
+    if (hasValidSupabase()) {
       try {
         const [barriers, spots, tracks] = await Promise.all([
           sbFetch('barrier_reports'),
           sbFetch('bf_spots'),
           sbFetch('driving_tracks')
         ]);
-        store = { barriers: barriers || [], spots: spots || [], tracks: tracks || [] };
+        const [requests, reviews] = await Promise.all([
+          safeSbGet('spot_requests'),
+          safeSbGet('spot_reviews')
+        ]);
+        store = {
+          barriers: barriers || [],
+          spots: spots || [],
+          tracks: tracks || [],
+          requests,
+          reviews
+        };
       } catch (e) {
         alert('Supabase 조회 실패로 로컬 저장소로 전환합니다:\n' + e.message);
         loadLocalStore();
@@ -699,10 +784,17 @@
   function loadLocalStore() {
     const raw = localStorage.getItem('bf_local_store');
     if (raw) {
-      store = JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      store = {
+        barriers: parsed.barriers || [],
+        spots: parsed.spots || [],
+        tracks: parsed.tracks || [],
+        requests: parsed.requests || [],
+        reviews: parsed.reviews || []
+      };
     } else {
       store = JSON.parse(JSON.stringify(SEED_DATA));
-      localStorage.setItem('bf_local_store', JSON.stringify(store));
+      saveLocalStore();
     }
   }
 
@@ -711,9 +803,8 @@
   }
 
   async function insertRecord(table, localKey, payload) {
-    const { sbUrl, sbKey } = getConfig();
-    if (sbUrl && sbKey) {
-      const inserted = await sbFetch(table, 'POST', payload);
+    if (hasValidSupabase()) {
+      const inserted = await sbFetch(table, 'POST', payload, '');
       store[localKey].unshift(inserted[0]);
     } else {
       store[localKey].unshift({ id: 'loc-' + Date.now(), ...payload, created_at: new Date().toISOString() });
@@ -724,7 +815,74 @@
     renderMapItems();
   }
 
-  // ===== 네이버지도 API 초기화 & 폴백 =====
+  // ===== 사진 리사이징 및 Storage 업로드 =====
+  function handlePhotoSelect(input, kind) {
+    const file = input.files && input.files[0];
+    if (!file) {
+      pendingPhotos[kind] = null;
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 900;
+        let w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+          else { w = Math.round(w * maxDim / h); h = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.72);
+        canvas.toBlob(blob => {
+          pendingPhotos[kind] = { blob, dataUrl };
+          const preview = document.getElementById(`${kind}-photo-preview`);
+          preview.src = dataUrl;
+          preview.style.display = 'block';
+        }, 'image/jpeg', 0.72);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function uploadPhotoIfAny(kind) {
+    const photo = pendingPhotos[kind];
+    if (!photo) return '';
+    if (hasValidSupabase() && photo.blob) {
+      try {
+        const { sbUrl, sbKey } = getConfig();
+        const fileName = `${kind}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+        const res = await fetch(`${sbUrl}/storage/v1/object/bf-photos/${fileName}`, {
+          method: 'POST',
+          headers: {
+            apikey: sbKey,
+            Authorization: `Bearer ${sbKey}`,
+            'Content-Type': 'image/jpeg'
+          },
+          body: photo.blob
+        });
+        if (res.ok) {
+          return `${sbUrl}/storage/v1/object/public/bf-photos/${fileName}`;
+        }
+      } catch {
+        // Storage 버킷이 아직 없으면 압축 DataURL로 안전하게 저장
+      }
+    }
+    return photo.dataUrl;
+  }
+
+  function resetPhotoInput(kind) {
+    pendingPhotos[kind] = null;
+    const inp = document.getElementById(`${kind}-photo-input`);
+    const prev = document.getElementById(`${kind}-photo-preview`);
+    if (inp) inp.value = '';
+    if (prev) { prev.src = ''; prev.style.display = 'none'; }
+  }
+
+  // ===== 네이버지도 API 초기화 & Reverse Geocoding =====
   function initMap() {
     const { naverId } = getConfig();
     if (!naverId) {
@@ -752,9 +910,24 @@
       renderMapItems();
     };
     script.onerror = () => {
-      alert('네이버지도 스크립트 로드 실패: Client ID 또는 도메인(Web 서비스 URL) 등록을 확인하세요.');
+      alert('네이버지도 스크립트 로드 실패: Client ID 또는 Web 서비스 URL 등록을 확인하세요.');
     };
     document.head.appendChild(script);
+  }
+
+  function fillAddressFromCoord(lat, lng, inputId) {
+    try {
+      if (!window.naver || !naver.maps || !naver.maps.Service || !naver.maps.Service.reverseGeocode) return;
+      naver.maps.Service.reverseGeocode({
+        coords: new naver.maps.LatLng(lat, lng),
+        orders: [naver.maps.Service.OrderType.ROAD_ADDR, naver.maps.Service.OrderType.ADDR].join(',')
+      }, (status, response) => {
+        if (status !== naver.maps.Service.Status.OK) return;
+        const addr = response?.v2?.address?.roadAddress || response?.v2?.address?.jibunAddress || '';
+        const input = document.getElementById(inputId);
+        if (addr && input && !input.value.trim()) input.value = addr;
+      });
+    } catch { /* Geocoder 미선택 시 무시 */ }
   }
 
   function onFallbackMapClick(e) {
@@ -779,11 +952,11 @@
             position: new naver.maps.LatLng(b.lat, b.lng),
             map: naverMap,
             icon: {
-              content: `<div style="background:#dc2626;color:#fff;padding:4px 8px;border-radius:99px;font-size:11px;font-weight:700;box-shadow:0 2px 5px rgba(0,0,0,.3);">🚧 ${b.barrier_type}</div>`,
-              anchor: new naver.maps.Point(20, 15)
+              content: `<div style="background:#dc2626;color:#fff;padding:4px 9px;border-radius:99px;font-size:11px;font-weight:700;box-shadow:0 2px 5px rgba(0,0,0,.3);white-space:nowrap;">🚧 ${esc(b.barrier_type)}</div>`,
+              anchor: new naver.maps.Point(24, 15)
             }
           });
-          naver.maps.Event.addListener(m, 'click', () => alert(`[배리어] ${b.barrier_type}\n사유: ${(b.reasons||[]).join(', ')}\n위치: ${b.address}`));
+          naver.maps.Event.addListener(m, 'click', () => openDetailModal('barrier', b.id));
           naverOverlays.push(m);
         });
       }
@@ -794,11 +967,26 @@
             position: new naver.maps.LatLng(s.lat, s.lng),
             map: naverMap,
             icon: {
-              content: `<div style="background:#1d4ed8;color:#fff;padding:4px 8px;border-radius:99px;font-size:11px;font-weight:700;box-shadow:0 2px 5px rgba(0,0,0,.3);">♿ ${s.spot_name}</div>`,
-              anchor: new naver.maps.Point(20, 15)
+              content: `<div style="background:#1d4ed8;color:#fff;padding:4px 9px;border-radius:99px;font-size:11px;font-weight:700;box-shadow:0 2px 5px rgba(0,0,0,.3);white-space:nowrap;">♿ ${esc(s.spot_name)}</div>`,
+              anchor: new naver.maps.Point(24, 15)
             }
           });
-          naver.maps.Event.addListener(m, 'click', () => alert(`[BF스팟 ★${s.rating}] ${s.spot_name}\n${s.comment || ''}`));
+          naver.maps.Event.addListener(m, 'click', () => openDetailModal('spot', s.id));
+          naverOverlays.push(m);
+        });
+      }
+
+      if (currentFilter === 'all' || currentFilter === 'request') {
+        store.requests.forEach(r => {
+          const m = new naver.maps.Marker({
+            position: new naver.maps.LatLng(r.lat, r.lng),
+            map: naverMap,
+            icon: {
+              content: `<div style="background:#7c3aed;color:#fff;padding:4px 9px;border-radius:99px;font-size:11px;font-weight:700;box-shadow:0 2px 5px rgba(0,0,0,.3);white-space:nowrap;">❓ ${esc(r.spot_name)}</div>`,
+              anchor: new naver.maps.Point(24, 15)
+            }
+          });
+          naver.maps.Event.addListener(m, 'click', () => openDetailModal('request', r.id));
           naverOverlays.push(m);
         });
       }
@@ -811,15 +999,17 @@
             path: t.path_coords.map(p => new naver.maps.LatLng(p.lat, p.lng)),
             strokeColor: '#16a34a',
             strokeWeight: 5,
-            strokeOpacity: 0.85
+            strokeOpacity: 0.85,
+            clickable: true
           });
+          naver.maps.Event.addListener(line, 'click', () => openDetailModal('track', t.id));
           naverOverlays.push(line);
         });
       }
       return;
     }
 
-    // 폴백 지도 렌더링
+    // 폴백 테스트 지도 렌더링
     const box = document.getElementById('fallback-markers');
     box.innerHTML = '';
     const toPercent = (lat, lng) => ({
@@ -827,30 +1017,22 @@
       y: 50 - ((lat - DEFAULT_CENTER.lat) / 0.01) * 100
     });
 
-    if (currentFilter === 'all' || currentFilter === 'barrier') {
-      store.barriers.forEach(b => {
-        const pos = toPercent(b.lat, b.lng);
+    const drawSim = (items, cls, icon, labelKey, kind) => {
+      items.forEach(item => {
+        const pos = toPercent(item.lat, item.lng);
         const el = document.createElement('div');
-        el.className = 'sim-marker barrier';
+        el.className = `sim-marker ${cls}`;
         el.style.left = `${Math.min(92, Math.max(8, pos.x))}%`;
         el.style.top = `${Math.min(88, Math.max(12, pos.y))}%`;
-        el.textContent = `🚧 ${b.barrier_type}`;
-        el.onclick = (ev) => { ev.stopPropagation(); alert(`[배리어] ${b.barrier_type}\n사유: ${(b.reasons||[]).join(', ')}\n${b.description || ''}`); };
+        el.textContent = `${icon} ${item[labelKey]}`;
+        el.onclick = (ev) => { ev.stopPropagation(); openDetailModal(kind, item.id); };
         box.appendChild(el);
       });
-    }
-    if (currentFilter === 'all' || currentFilter === 'spot') {
-      store.spots.forEach(s => {
-        const pos = toPercent(s.lat, s.lng);
-        const el = document.createElement('div');
-        el.className = 'sim-marker spot';
-        el.style.left = `${Math.min(92, Math.max(8, pos.x))}%`;
-        el.style.top = `${Math.min(88, Math.max(12, pos.y))}%`;
-        el.textContent = `♿ ${s.spot_name}`;
-        el.onclick = (ev) => { ev.stopPropagation(); alert(`[BF 스팟 ★${s.rating}] ${s.spot_name}\n${s.comment || ''}`); };
-        box.appendChild(el);
-      });
-    }
+    };
+
+    if (currentFilter === 'all' || currentFilter === 'barrier') drawSim(store.barriers, 'barrier', '🚧', 'barrier_type', 'barrier');
+    if (currentFilter === 'all' || currentFilter === 'spot') drawSim(store.spots, 'spot', '♿', 'spot_name', 'spot');
+    if (currentFilter === 'all' || currentFilter === 'request') drawSim(store.requests, 'request', '❓', 'spot_name', 'request');
   }
 
   function setMapFilter(filter, btn) {
@@ -875,6 +1057,10 @@
   }
 
   // ===== UI 헬퍼 =====
+  function esc(str) {
+    return String(str ?? '').replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
+  }
+
   function switchTab(name, btn) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.getElementById(`panel-${name}`).classList.add('active');
@@ -904,46 +1090,41 @@
     return Array.from(document.querySelectorAll(`#${groupId} .tap-btn.selected`)).map(b => b.textContent.trim());
   }
 
-  function previewPhoto(input, imgId) {
-    const file = input.files && input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      const img = document.getElementById(imgId);
-      img.src = e.target.result;
-      img.style.display = 'block';
-    };
-    reader.readAsDataURL(file);
-  }
-
   // ===== 배리어 제보 (F-02) =====
   function openBarrierModal() {
     document.getElementById('barrier-coord-text').textContent = `선택 좌표: ${currentCenter.lat.toFixed(5)}, ${currentCenter.lng.toFixed(5)}`;
+    fillAddressFromCoord(currentCenter.lat, currentCenter.lng, 'barrier-address');
     openModal('modal-barrier');
   }
 
   async function submitBarrier() {
     const reasons = getMultiTexts('barrier-reasons');
     if (reasons.length === 0) return alert('배리어인 이유를 1개 이상 선택해 주세요.');
-    const payload = {
-      lat: currentCenter.lat,
-      lng: currentCenter.lng,
-      address: document.getElementById('barrier-address').value.trim() || `좌표(${currentCenter.lat.toFixed(4)}, ${currentCenter.lng.toFixed(4)})`,
-      indoor_outdoor: getSingleText('barrier-inout'),
-      barrier_type: getSingleText('barrier-types'),
-      reasons,
-      target_groups: getMultiTexts('barrier-targets'),
-      description: document.getElementById('barrier-desc').value.trim(),
-      photo_data_url: document.getElementById('barrier-photo-preview').src || ''
-    };
+    const btn = document.getElementById('btn-submit-barrier');
+    btn.disabled = true; btn.textContent = '저장 중...';
     try {
+      const photoUrl = await uploadPhotoIfAny('barrier');
+      const payload = {
+        lat: currentCenter.lat,
+        lng: currentCenter.lng,
+        address: document.getElementById('barrier-address').value.trim() || `좌표(${currentCenter.lat.toFixed(4)}, ${currentCenter.lng.toFixed(4)})`,
+        indoor_outdoor: getSingleText('barrier-inout'),
+        barrier_type: getSingleText('barrier-types'),
+        reasons,
+        target_groups: getMultiTexts('barrier-targets'),
+        description: document.getElementById('barrier-desc').value.trim(),
+        photo_data_url: photoUrl
+      };
       await insertRecord('barrier_reports', 'barriers', payload);
       closeModal('modal-barrier');
       document.getElementById('barrier-address').value = '';
       document.getElementById('barrier-desc').value = '';
+      resetPhotoInput('barrier');
       alert('배리어 제보가 등록되었습니다.');
     } catch (e) {
       alert('저장 오류: ' + e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = '배리어 제보 저장';
     }
   }
 
@@ -976,32 +1157,171 @@
   async function submitSpot() {
     const spotName = document.getElementById('spot-name').value.trim();
     if (!spotName) return alert('스팟명을 입력해 주세요.');
-    const ratingBtn = document.querySelector('#spot-rating .tap-btn.selected');
-    const payload = {
-      lat: currentCenter.lat,
-      lng: currentCenter.lng,
-      category: getSingleText('spot-categories'),
-      spot_name: spotName,
-      rating: ratingBtn ? Number(ratingBtn.dataset.val) : 5,
-      q1_no_step: spotAnswers.q1_no_step ?? null,
-      q2_width_80cm: spotAnswers.q2_width_80cm ?? null,
-      q3_kind_staff: spotAnswers.q3_kind_staff ?? null,
-      q4_movable_chair: spotAnswers.q4_movable_chair ?? null,
-      q5_accessible_toilet: spotAnswers.q5_accessible_toilet ?? null,
-      q6_wheelchair_parking: spotAnswers.q6_wheelchair_parking ?? null,
-      q7_bf_room: spotAnswers.q7_bf_room ?? null,
-      comment: document.getElementById('spot-comment').value.trim(),
-      photo_data_url: document.getElementById('spot-photo-preview').src || ''
-    };
+    const btn = document.getElementById('btn-submit-spot');
+    btn.disabled = true; btn.textContent = '저장 중...';
     try {
+      const photoUrl = await uploadPhotoIfAny('spot');
+      const ratingBtn = document.querySelector('#spot-rating .tap-btn.selected');
+      const payload = {
+        lat: currentCenter.lat,
+        lng: currentCenter.lng,
+        category: getSingleText('spot-categories'),
+        spot_name: spotName,
+        rating: ratingBtn ? Number(ratingBtn.dataset.val) : 5,
+        q1_no_step: spotAnswers.q1_no_step ?? null,
+        q2_width_80cm: spotAnswers.q2_width_80cm ?? null,
+        q3_kind_staff: spotAnswers.q3_kind_staff ?? null,
+        q4_movable_chair: spotAnswers.q4_movable_chair ?? null,
+        q5_accessible_toilet: spotAnswers.q5_accessible_toilet ?? null,
+        q6_wheelchair_parking: spotAnswers.q6_wheelchair_parking ?? null,
+        q7_bf_room: spotAnswers.q7_bf_room ?? null,
+        comment: document.getElementById('spot-comment').value.trim(),
+        photo_data_url: photoUrl
+      };
       await insertRecord('bf_spots', 'spots', payload);
       closeModal('modal-spot');
       document.getElementById('spot-name').value = '';
       document.getElementById('spot-comment').value = '';
+      resetPhotoInput('spot');
+      spotAnswers = {};
+      renderSpotChecklist();
       alert('BF 스팟이 등록되었습니다.');
     } catch (e) {
       alert('저장 오류: ' + e.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'BF 스팟 등록';
     }
+  }
+
+  // ===== 정보 등록 요청 (F-07) =====
+  function openRequestModal() {
+    document.getElementById('request-coord-text').textContent = `선택 좌표: ${currentCenter.lat.toFixed(5)}, ${currentCenter.lng.toFixed(5)}`;
+    openModal('modal-request');
+  }
+
+  async function submitRequest() {
+    const spotName = document.getElementById('request-spot-name').value.trim();
+    const detail = document.getElementById('request-detail').value.trim();
+    if (!spotName) return alert('확인하고 싶은 장소명을 입력해 주세요.');
+    try {
+      await insertRecord('spot_requests', 'requests', {
+        lat: currentCenter.lat,
+        lng: currentCenter.lng,
+        spot_name: spotName,
+        request_detail: detail || '출입구 단차 및 화장실 정보 확인 요청'
+      });
+      closeModal('modal-request');
+      document.getElementById('request-spot-name').value = '';
+      document.getElementById('request-detail').value = '';
+      alert('배리어프리 정보 등록 요청이 올려졌습니다.');
+    } catch (e) {
+      alert('저장 오류: ' + e.message);
+    }
+  }
+
+  // ===== 상세 보기 및 이용 평가(F-08) =====
+  function openDetailModal(kind, id) {
+    const titleEl = document.getElementById('detail-title');
+    const bodyEl = document.getElementById('detail-body');
+
+    if (kind === 'barrier') {
+      const b = store.barriers.find(x => x.id === id);
+      if (!b) return;
+      titleEl.textContent = `🚧 배리어 상세 (${b.barrier_type})`;
+      bodyEl.innerHTML = `
+        ${b.photo_data_url ? `<img src="${esc(b.photo_data_url)}" class="detail-photo" />` : ''}
+        <div class="coord-box">${esc(b.indoor_outdoor)} · ${esc(b.address)}</div>
+        <p style="margin:6px 0;"><strong>배리어 사유:</strong> ${(b.reasons || []).map(r => `<span class="tag tag-barrier">${esc(r)}</span>`).join(' ')}</p>
+        <p style="margin:6px 0;"><strong>주의 대상:</strong> ${esc((b.target_groups || []).join(', '))}</p>
+        <p class="muted" style="margin:8px 0;">${esc(b.description || '추가 설명 없음')}</p>
+        <button class="btn-submit" onclick="focusMapPoint(${b.lat}, ${b.lng})">지도에서 위치 보기</button>
+      `;
+    } else if (kind === 'spot') {
+      const s = store.spots.find(x => x.id === id);
+      if (!s) return;
+      const reviews = store.reviews.filter(r => r.spot_id === s.id);
+      titleEl.textContent = `♿ ${s.spot_name}`;
+      bodyEl.innerHTML = `
+        ${s.photo_data_url ? `<img src="${esc(s.photo_data_url)}" class="detail-photo" />` : ''}
+        <div class="coord-box">${esc(s.category)} · 등록 별점 ★${s.rating} · 리뷰 ${reviews.length}건</div>
+        <p style="margin:4px 0 10px;">${esc(s.comment || '작성된 코멘트가 없습니다.')}</p>
+        <strong style="font-size:13px;">접근성 7대 체크리스트</strong>
+        <div style="margin:6px 0 12px;">
+          ${SPOT_QUESTIONS.map(q => {
+            const v = s[q.key];
+            const badge = v === true ? '<span class="ox-badge o">O</span>' : (v === false ? '<span class="ox-badge x">X</span>' : '<span class="ox-badge n">미확인</span>');
+            return `<div class="ox-row"><span>${q.label}</span>${badge}</div>`;
+          }).join('')}
+        </div>
+        <div class="review-box">
+          <strong style="font-size:13px;">이용 평가 남기기 (F-08)</strong>
+          <div class="tap-grid-5" id="rev-rating" style="margin:8px 0;">
+            <button class="tap-btn" onclick="singleSelect(this, 'rev-rating')" data-val="1">★1</button>
+            <button class="tap-btn" onclick="singleSelect(this, 'rev-rating')" data-val="2">★2</button>
+            <button class="tap-btn" onclick="singleSelect(this, 'rev-rating')" data-val="3">★3</button>
+            <button class="tap-btn" onclick="singleSelect(this, 'rev-rating')" data-val="4">★4</button>
+            <button class="tap-btn selected" onclick="singleSelect(this, 'rev-rating')" data-val="5">★5</button>
+          </div>
+          <textarea id="rev-text" class="textarea-box" rows="2" placeholder="실제 방문 후 휠체어 동선이나 편의를 평가해 주세요"></textarea>
+          <button class="btn-submit" style="margin-top:8px;" onclick="submitReview('${esc(s.id)}')">평가 등록</button>
+          <div style="margin-top:10px;">
+            ${reviews.length === 0 ? '<div class="muted">아직 추가 이용 평가가 없습니다.</div>' : reviews.map(r => `
+              <div class="review-item">
+                <strong>★${r.rating}</strong> · <span class="muted">${esc(r.author_name)} (${(r.created_at || '').slice(0, 10)})</span>
+                <div style="margin-top:2px;">${esc(r.review_text)}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    } else if (kind === 'request') {
+      const r = store.requests.find(x => x.id === id);
+      if (!r) return;
+      titleEl.textContent = `❓ ${r.spot_name}`;
+      bodyEl.innerHTML = `
+        <div class="coord-box">상태: ${r.status === 'answered' ? '답변완료' : '정보 요청 중'} · ${r.lat.toFixed(5)}, ${r.lng.toFixed(5)}</div>
+        <p>${esc(r.request_detail)}</p>
+        <button class="btn-submit" onclick="focusMapPoint(${r.lat}, ${r.lng}); closeModal('modal-detail'); openSpotModal();">내가 이 장소 BF 스팟으로 등록하기</button>
+      `;
+    } else if (kind === 'track') {
+      const t = store.tracks.find(x => x.id === id);
+      if (!t) return;
+      titleEl.textContent = `🛤️ ${t.track_name}`;
+      bodyEl.innerHTML = `
+        <div class="coord-box">${esc(t.mobility_type)} · ${t.distance_m}m · ${t.duration_sec}초 · ${t.is_public ? '공개' : '비공개'}</div>
+        <p class="muted">기록된 GPS 좌표 포인트: ${(t.path_coords || []).length}개</p>
+        ${(t.path_coords && t.path_coords.length > 0) ? `<button class="btn-submit success" onclick="focusMapPoint(${t.path_coords[0].lat}, ${t.path_coords[0].lng})">지도에서 주행 경로 보기</button>` : ''}
+      `;
+    }
+    openModal('modal-detail');
+  }
+
+  async function submitReview(spotId) {
+    const text = document.getElementById('rev-text').value.trim();
+    if (!text) return alert('평가 내용을 입력해 주세요.');
+    const ratingBtn = document.querySelector('#rev-rating .tap-btn.selected');
+    try {
+      await insertRecord('spot_reviews', 'reviews', {
+        spot_id: spotId,
+        rating: ratingBtn ? Number(ratingBtn.dataset.val) : 5,
+        review_text: text,
+        author_name: '리빙랩 참여자'
+      });
+      openDetailModal('spot', spotId);
+    } catch (e) {
+      alert('평가 저장 오류: ' + e.message);
+    }
+  }
+
+  function focusMapPoint(lat, lng) {
+    currentCenter = { lat, lng };
+    closeModal('modal-detail');
+    switchTab('map', document.getElementById('nav-map'));
+    if (naverMap && window.naver) {
+      naverMap.setCenter(new naver.maps.LatLng(lat, lng));
+      naverMap.setZoom(17);
+    }
+    renderMapItems();
   }
 
   // ===== 주행 이력 기록 (F-06) =====
@@ -1115,8 +1435,7 @@
       user_note: note
     };
     try {
-      const { sbUrl, sbKey } = getConfig();
-      if (sbUrl && sbKey) await sbFetch('sos_logs', 'POST', payload);
+      if (hasValidSupabase()) await sbFetch('sos_logs', 'POST', payload, '');
       closeModal('modal-sos');
       alert(`[긴급 위치 전송 완료]\n수신: ${agency}\n좌표: ${payload.lat.toFixed(5)}, ${payload.lng.toFixed(5)}`);
     } catch (e) {
@@ -1129,37 +1448,46 @@
     const items = [
       ...store.barriers.map(b => ({ kind: 'barrier', ts: b.created_at, data: b })),
       ...store.spots.map(s => ({ kind: 'spot', ts: s.created_at, data: s })),
-      ...store.tracks.map(t => ({ kind: 'track', ts: t.created_at, data: t }))
+      ...store.tracks.map(t => ({ kind: 'track', ts: t.created_at, data: t })),
+      ...store.requests.map(r => ({ kind: 'request', ts: r.created_at, data: r }))
     ].sort((a, b) => new Date(b.ts) - new Date(a.ts));
 
     const el = document.getElementById('feed-list');
     if (items.length === 0) {
-      el.innerHTML = '<div class="card muted">아직 수집된 데이터가 없습니다. 지도에서 + 게시물 버튼을 눌러 등록해 보세요.</div>';
+      el.innerHTML = '<div class="card static muted">아직 수집된 데이터가 없습니다. 지도에서 + 게시물 버튼을 눌러 등록해 보세요.</div>';
       return;
     }
     el.innerHTML = items.map(item => {
       if (item.kind === 'barrier') {
         const b = item.data;
-        return `<div class="card">
-          <div class="card-head"><span class="tag tag-barrier">🚧 배리어 · ${b.barrier_type} (${b.indoor_outdoor})</span><span class="muted">${(b.created_at||'').slice(0,10)}</span></div>
-          <strong>${b.address}</strong>
-          <div class="muted" style="margin-top:4px;">사유: ${(b.reasons||[]).join(', ')}</div>
-          <div class="muted">대상: ${(b.target_groups||[]).join(', ')}</div>
+        return `<div class="card" onclick="openDetailModal('barrier', '${esc(b.id)}')">
+          <div class="card-head"><span class="tag tag-barrier">🚧 배리어 · ${esc(b.barrier_type)} (${esc(b.indoor_outdoor)})</span><span class="muted">${(b.created_at||'').slice(0,10)}</span></div>
+          <strong>${esc(b.address)}</strong>
+          <div class="muted" style="margin-top:4px;">사유: ${esc((b.reasons||[]).join(', '))} ${b.photo_data_url ? '· 📷 사진포함' : ''}</div>
         </div>`;
       }
       if (item.kind === 'spot') {
         const s = item.data;
         const oxCount = SPOT_QUESTIONS.filter(q => s[q.key] === true).length;
-        return `<div class="card">
-          <div class="card-head"><span class="tag tag-spot">♿ BF 스팟 · ${s.category}</span><span class="muted">★${s.rating} (O:${oxCount}/7)</span></div>
-          <strong>${s.spot_name}</strong>
-          <div class="muted" style="margin-top:4px;">${s.comment || '코멘트 없음'}</div>
+        const revCount = store.reviews.filter(r => r.spot_id === s.id).length;
+        return `<div class="card" onclick="openDetailModal('spot', '${esc(s.id)}')">
+          <div class="card-head"><span class="tag tag-spot">♿ BF 스팟 · ${esc(s.category)}</span><span class="muted">★${s.rating} (O:${oxCount}/7 · 리뷰 ${revCount})</span></div>
+          <strong>${esc(s.spot_name)}</strong>
+          <div class="muted" style="margin-top:4px;">${esc(s.comment || '코멘트 없음')}</div>
+        </div>`;
+      }
+      if (item.kind === 'request') {
+        const r = item.data;
+        return `<div class="card" onclick="openDetailModal('request', '${esc(r.id)}')">
+          <div class="card-head"><span class="tag tag-request">❓ 등록 요청</span><span class="muted">${(r.created_at||'').slice(0,10)}</span></div>
+          <strong>${esc(r.spot_name)}</strong>
+          <div class="muted" style="margin-top:4px;">${esc(r.request_detail)}</div>
         </div>`;
       }
       const t = item.data;
-      return `<div class="card">
-        <div class="card-head"><span class="tag tag-track">🛤️ 주행이력 · ${t.mobility_type}</span><span class="muted">${t.is_public ? '공개' : '비공개'}</span></div>
-        <strong>${t.track_name}</strong>
+      return `<div class="card" onclick="openDetailModal('track', '${esc(t.id)}')">
+        <div class="card-head"><span class="tag tag-track">🛤️ 주행이력 · ${esc(t.mobility_type)}</span><span class="muted">${t.is_public ? '공개' : '비공개'}</span></div>
+        <strong>${esc(t.track_name)}</strong>
         <div class="muted" style="margin-top:4px;">이동거리 ${t.distance_m}m · 소요 ${t.duration_sec}초</div>
       </div>`;
     }).join('');
@@ -1169,6 +1497,7 @@
     document.getElementById('stat-barriers').textContent = store.barriers.length;
     document.getElementById('stat-spots').textContent = store.spots.length;
     document.getElementById('stat-tracks').textContent = store.tracks.length;
+    document.getElementById('stat-requests').textContent = store.requests.length;
   }
 
   function selectWheelchairPreset(btn, widthCm, lengthCm, label) {
